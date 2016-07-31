@@ -26,7 +26,7 @@ devices = box.get_devices(self,"passive")
 calls = box.get_foncalls()
 
 # getting a list of objects of FritzBoxFonBookEntry
-calls = box.get_fonbook()
+fon_book = box.get_fonbook()
 
 ```
 
