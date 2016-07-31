@@ -24,6 +24,10 @@ devices = box.get_devices(self,"passive")
 
 # getting a list of objects of FritzBoxCall
 calls = box.get_foncalls()
+
+# getting a list of objects of FritzBoxFonBookEntry
+calls = box.get_fonbook()
+
 ```
 
 
@@ -59,7 +63,7 @@ on my website [defendtheplanet.net](defendtheplanet.net)
 - add pictures of google calendar entries
 - enable gant charts of devices (d3js?)
 
-- get FritzBox phone book(s)
+- get FritzBox phone book(s) [done]
 	- sync phone books to Google Contacts
 	- sync phone books to CardDav
 - get FritzBox system status

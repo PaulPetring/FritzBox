@@ -7,6 +7,7 @@ from lxml import etree
 import hashlib
 import requests
 import json
+from lxml import html
 
 import datetime
 from datetime import datetime, timedelta
@@ -22,6 +23,7 @@ class FritzBox:
 	_password="" #password of the FritzBox
 	_sid="" #current session identifier 
 	_last_calls=[] #calls buffer 
+	_last_phonebook_entries=[] #devices buffer
 	_last_devices=[] #devices buffer
 	_request_session = requests.Session() #request session object 
 	_request_headers = { #default headers, feel free to modify these
@@ -30,6 +32,7 @@ class FritzBox:
 	    'User-Agent': 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36',
 	    'Accept-Language': 'en-US,en;q=0.8,de;q=0.6',
 	    'Accept-Encoding': 'gzip, deflate, sdch',
+	    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
 	    'Connection': 'keep-alive',
 	    'Cache-Control': 'no-cache',
 	    }
@@ -109,7 +112,6 @@ class FritzBox:
 		"""
 		data = dict(xhr=1, sid=self._sid, lang='en',page='netDev',type="cleanup")
 		r = self._request_session.post(self._url+"/data.lua", data=data, allow_redirects=True,headers=self._request_headers)
-
 		#r.content should contain valid json string with active and passive devices
 		parsed=json.loads(r.content)
 		
@@ -134,6 +136,55 @@ class FritzBox:
 			ret_list.append(FritzBoxCall(line))
 		_last_calls = ret_list
 		return ret_list
+
+	def get_fonbook(self):
+		
+		""" #downloading it from the button ended in timeout	
+		data = dict(sid=self._sid,PhonebookId=0,PhonebookExportName="Telefonbuch",PhonebookExport="")
+		print data		
+		r = self._request_session.post(self._url+"/cgi-bin/firmwarecfg", data=data, allow_redirects=True,headers=self._request_headers)
+		print(r.content)	
+		"""
+
+		# as a workaround we parse the delivered table
+		data = dict(sid=self._sid,xhr=1,page="bookLi",no_sidrenew="",lang="en")
+		r = self._request_session.post(self._url+"/data.lua", data=data, allow_redirects=True,headers=self._request_headers)
+		tree = html.fromstring(r.content.decode('utf-8'))
+		tree_names = tree.xpath('//table[@id="uiInnerTable"]/tr')
+		
+		ret_list = []
+		for name_row in tree_names[:-1]: #removing the "no entries-entry
+			entry = FritzBoxFonBookEntry( )
+			entry.name = ''.join(name_row.xpath('td[@class="tname"]/text()')).encode('utf-8')
+			entry.numbers = name_row.xpath('td[@class="tnum"]/text()') #string list!
+			entry.type = ''.join(name_row.xpath('td[@class="ttype"]/text()')).encode('utf-8')
+			entry.code = ''.join(name_row.xpath('td[@class="tcode"]/text()')).encode('utf-8') 
+			entry.vanity = ''.join(name_row.xpath('td[@class="tvanity"]/text()')).encode('utf-8') 
+			entry.imp = ''.join(name_row.xpath('td[@class="timp"]/text()')).encode('utf-8')
+			ret_list.append(entry)
+		self._last_phonebook_entries = ret_list 
+		return ret_list
+
+class FritzBoxFonBookEntry:
+	name = ""
+	numbers = []
+	type  = ""
+	vanity = ""
+	code  = ""
+	imp = ""
+
+	def __init__(self, name="", numbers="",type="",code="",vanity="",imp=""):
+		self.name=name
+		self.numbers=numbers
+		self.type=type
+		self.code=code
+		self.vanity=vanity
+		self.imp=imp
+
+	def __repr__(self): #debug purposes
+		return str(self.name) #+ " " +''.join(str(e) for e in self.numbers)
+	def __str__(self): #debug purposes
+		return str(self.name) #+ " " +''.join(str(e) for e in self.numbers)
 
 class FritzBoxCall:
 	call_type="" #int
@@ -214,3 +265,4 @@ class FritzBoxDevice:
 
 	def __str__(self): #debug purposes
 		return self.UID + " " +self.ipv4 + " " +self.type + " " +self.name
+
