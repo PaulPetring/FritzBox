@@ -51,7 +51,7 @@ handleDeviceEntriesToGoogleCalendar(devices_calendar,device_events,devices)
 
 ### More
 
-on my website [defendtheplanet.net](defendtheplanet.net)
+on my website [defendtheplanet.net](https://defendtheplanet.net)
 
 
 ### TODO 
